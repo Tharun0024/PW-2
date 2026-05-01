@@ -14,6 +14,10 @@ import { useTranslate } from '../../hooks/useTranslate.jsx';
 const TimelineStep = ({ step, isLast }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  if (!step || typeof step !== 'object') {
+    return null; // Don't render if step is not a valid object
+  }
+
   return (
     <li role="listitem" className="relative flex flex-col pb-8">
       <div className="flex items-start">
