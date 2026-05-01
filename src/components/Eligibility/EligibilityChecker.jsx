@@ -1,0 +1,95 @@
+/**
+ * @file A component to check voter eligibility.
+ */
+import { useState } from 'react';
+import PropTypes from 'prop-types';
+import { validateAge, validateAadhaar, validatePincode, validateName } from '../../utils/validators';
+
+/**
+ * EligibilityChecker component provides a form to check voting eligibility.
+ * @param {{persona: object}} props
+ * @returns {React.ReactElement} - The EligibilityChecker component.
+ */
+const EligibilityChecker = ({ persona }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    age: '',
+    aadhaar: '',
+    pincode: '',
+  });
+  const [errors, setErrors] = useState({});
+  const [result, setResult] = useState(null);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    setResult(null);
+    const newErrors = {};
+
+    if (!validateName(formData.name)) {
+      newErrors.name = 'Please enter a valid name (min 2 chars, no special characters).';
+    }
+    if (!validateAge(parseInt(formData.age, 10))) {
+      newErrors.age = 'You must be 18 or older to vote.';
+    }
+    if (!validateAadhaar(formData.aadhaar)) {
+      newErrors.aadhaar = 'Please enter a valid 12-digit Aadhaar number.';
+    }
+    if (!validatePincode(formData.pincode)) {
+      newErrors.pincode = 'Please enter a valid 6-digit Indian pincode.';
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length === 0) {
+      setResult('Based on the data provided, you are eligible to vote!');
+    } else {
+      setResult('Please fix the errors in the form.');
+    }
+  };
+
+  return (
+    <div className="p-4" role="form" aria-labelledby="eligibility-heading">
+      <h2 id="eligibility-heading" className="text-xl font-bold mb-4">Check Your Eligibility</h2>
+      <p className="mb-4 text-sm text-gray-600">Current Persona: {persona.label}</p>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="name" className="block font-medium">Name</label>
+          <input type="text" id="name" name="name" value={formData.name} onChange={handleChange} aria-label="Your full name" className="w-full p-2 border rounded-md" />
+          {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+        </div>
+        <div>
+          <label htmlFor="age" className="block font-medium">Age</label>
+          <input type="number" id="age" name="age" value={formData.age} onChange={handleChange} aria-label="Your age" className="w-full p-2 border rounded-md" />
+          {errors.age && <p className="text-red-500 text-sm mt-1">{errors.age}</p>}
+        </div>
+        <div>
+          <label htmlFor="aadhaar" className="block font-medium">Aadhaar Number</label>
+          <input type="text" id="aadhaar" name="aadhaar" value={formData.aadhaar} onChange={handleChange} aria-label="Your 12-digit Aadhaar number" className="w-full p-2 border rounded-md" />
+          {errors.aadhaar && <p className="text-red-500 text-sm mt-1">{errors.aadhaar}</p>}
+        </div>
+        <div>
+          <label htmlFor="pincode" className="block font-medium">Pincode</label>
+          <input type="text" id="pincode" name="pincode" value={formData.pincode} onChange={handleChange} aria-label="Your 6-digit pincode" className="w-full p-2 border rounded-md" />
+          {errors.pincode && <p className="text-red-500 text-sm mt-1">{errors.pincode}</p>}
+        </div>
+        <button type="submit" className="bg-primary text-white p-2 rounded-md">Check</button>
+      </form>
+      {result && (
+        <div role="alert" className={`mt-4 p-4 rounded-lg ${Object.keys(errors).length > 0 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+          {result}
+        </div>
+      )}
+    </div>
+  );
+};
+
+EligibilityChecker.propTypes = {
+    persona: PropTypes.object
+};
+
+export default EligibilityChecker;
