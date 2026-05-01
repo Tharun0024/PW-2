@@ -33,8 +33,7 @@ ElectIQ is a web-based AI assistant that provides personalized and context-aware
 
 *   **Google Gemini API**: Powers the core conversational AI, providing intelligent and context-aware responses.
 *   **Google Maps JavaScript API**: Used for the "Find Booth" feature, including geocoding, map display, and place search.
-*   **Google Translate API**: Enables real-time translation for multilingual support across the application.
-*   **Firebase Hosting**: Provides fast, secure, and reliable hosting for the production deployment.
+*   **Cloud Translation API**: Enables real-time translation for multilingual support across the application.
 
 ## Architecture
 
@@ -88,16 +87,19 @@ ElectIQ is designed with a multi-layered intelligence system that allows it to p
 
 ## Deployment
 
-This project is configured for seamless deployment with **Firebase Hosting**.
+This project is deployed on Google Cloud Platform (GCP).
 
-1.  **Install Firebase CLI:**
-    ```bash
-    npm install -g firebase-tools
-    ```
+The frontend is built using Vite and can be deployed using:
 
-2.  **Login to Firebase:**
-    ```bash
-    firebase login
+* Google Cloud Run (containerized)
+* Google App Engine
+* Any static hosting on GCP
+
+## Google Services Used
+
+* Gemini API (Generative Language API)
+* Google Maps JavaScript API
+* Cloud Translation API
     ```
 
 3.  **Initialize Firebase (if not already done):**
@@ -138,7 +140,7 @@ npm run test
 Security is a top priority. The following measures have been implemented:
 
 *   **Input Validation & Sanitization**: All user-generated input is rigorously validated and sanitized using custom utility functions (`src/utils/security.js`) to prevent XSS and other injection attacks.
-*   **Content Security Policy (CSP)**: A strict CSP is enforced via `firebase.json` to control which resources can be loaded, mitigating the risk of cross-site scripting.
+*   **Content Security Policy (CSP)**: A strict CSP can be configured in your GCP deployment to control which resources can be loaded, mitigating the risk of cross-site scripting.
 *   **Security Headers**: Additional headers like `X-Content-Type-Options`, `X-Frame-Options`, and `Referrer-Policy` are configured to enhance security.
 *   **Environment Variables**: All API keys and sensitive information are managed through environment variables (`.env`) and are not exposed on the client-side.
 
