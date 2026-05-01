@@ -13,7 +13,7 @@
 import { useState, useRef, lazy, Suspense } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
 import { usePersona } from './hooks/usePersona';
-import { TranslateProvider } from './hooks/useTranslate';
+import { TranslateProvider } from './hooks/useTranslate.jsx';
 import { useFocusTrap } from './hooks/useAccessibility';
 
 // Import Components

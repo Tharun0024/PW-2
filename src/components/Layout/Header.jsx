@@ -6,7 +6,7 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
-import { useTranslate } from '../../hooks/useTranslate';
+import { useTranslate } from '../../hooks/useTranslate.jsx';
 import { useFocusTrap } from '../../hooks/useAccessibility';
 
 const SUPPORTED_LANGUAGES = [

@@ -58,3 +58,13 @@ export function validateLocation(location) {
   const schema = z.string().min(1);
   return schema.safeParse(location).success;
 }
+
+/**
+ * Validates a physical address.
+ * @param {string} address - The address to validate.
+ * @returns {boolean} - True if the address is valid.
+ */
+export function validateAddress(address) {
+  const schema = z.string().min(5, { message: "Address must be at least 5 characters long." });
+  return schema.safeParse(address).success;
+}

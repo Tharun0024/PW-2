@@ -3,8 +3,8 @@
  */
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { ELECTION_STEPS } from '../../data/electionSteps';
-import { useTranslate } from '../../hooks/useTranslate';
+import { electionSteps } from '../../data/electionSteps';
+import { useTranslate } from '../../hooks/useTranslate.jsx';
 
 /**
  * A single expandable step in the election timeline.
@@ -70,7 +70,7 @@ TimelineStep.propTypes = {
  */
 const ElectionFlow = () => {
   const { translateContent, currentLanguage, loading } = useTranslate();
-  const [translatedSteps, setTranslatedSteps] = useState(ELECTION_STEPS);
+  const [steps, setSteps] = useState(electionSteps);
 
   useEffect(() => {
     if (currentLanguage === 'en') {

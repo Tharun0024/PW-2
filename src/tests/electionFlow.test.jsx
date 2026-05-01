@@ -7,11 +7,11 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import ElectionFlow from '../components/Flow/ElectionFlow';
-import { useTranslate } from '../hooks/useTranslate';
+import { useTranslate } from '../hooks/useTranslate.jsx';
 import { ELECTION_STEPS } from '../data/electionSteps';
 
 // Mock the useTranslate hook
-vi.mock('../hooks/useTranslate');
+vi.mock('../hooks/useTranslate.jsx');
 
 describe('ElectionFlow', () => {
   beforeEach(() => {

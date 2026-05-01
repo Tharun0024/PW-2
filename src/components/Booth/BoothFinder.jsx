@@ -6,7 +6,7 @@
  * for mapping, geocoding, and displaying markers.
  */
 import { useState, useRef, useEffect } from 'react';
-import * as mapsService from '../../services/mapsService';
+import { initMap } from '../../services/mapsService';
 import { validateAddress } from '../../utils/validators';
 import { sanitizeInput, validateTextInput } from '../../utils/security';
 import { useDebounce } from '../../hooks/useDebounce';

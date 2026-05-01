@@ -7,11 +7,11 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import ChatWindow from '../components/Chat/ChatWindow';
 import { useGemini } from '../hooks/useGemini';
-import { useTranslate } from '../hooks/useTranslate';
+import { useTranslate } from '../hooks/useTranslate.jsx';
 
 // Mock the hooks
 vi.mock('../hooks/useGemini');
-vi.mock('../hooks/useTranslate');
+vi.mock('../hooks/useTranslate.jsx');
 
 describe('ChatWindow', () => {
   const mockSendMessage = vi.fn();

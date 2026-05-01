@@ -7,7 +7,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useGemini } from '../../hooks/useGemini';
-import { useTranslate } from '../../hooks/useTranslate';
+import { useTranslate } from '../../hooks/useTranslate.jsx';
 import { sanitizeInput, validateTextInput } from '../../utils/security';
 import { useDebounce } from '../../hooks/useDebounce';
 

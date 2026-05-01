@@ -1,5 +1,5 @@
 /**
- * @file src/hooks/useTranslate.js
+ * @file src/hooks/useTranslate.jsx
  * @description This hook provides translation functionality across the application.
  * It manages the current language, caches translations to avoid redundant API calls,
  * and provides functions to translate text and entire objects.

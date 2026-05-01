@@ -56,3 +56,20 @@ export async function generateElectionResponse(userMessage, persona, conversatio
     }
   }
 }
+
+export const runChat = async (userInput, persona, history) => {
+  const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+
+  const sanitizedInput = sanitizeInput(userInput);
+
+  const chat = model.startChat({
+    history: history,
+    generationConfig: {
+      maxOutputTokens: 1000,
+    },
+  });
+
+  const result = await chat.sendMessage(sanitizedInput);
+  const response = await result.response;
+  return response.text();
+};

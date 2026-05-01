@@ -1,11 +1,11 @@
 /**
- * @file src/tests/useTranslate.test.js
+ * @file src/tests/useTranslate.test.jsx
  * @description Vitest tests for the useTranslate hook. This file tests the hook's state management,
  * caching logic, and interaction with the mocked translateService.
  */
 import { renderHook, act } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { useTranslate, TranslateProvider } from '../hooks/useTranslate';
+import { useTranslate, TranslateProvider } from '../hooks/useTranslate.jsx';
 import * as translateService from '../services/translateService';
 
 // Mock the service
