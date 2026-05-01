@@ -69,11 +69,12 @@ export const TranslateProvider = ({ children }) => {
      * @returns {Promise<object>} A new object with translated string values.
      */
     const translateContent = useCallback(async (contentObject) => {
-        if (currentLanguage === 'en') return contentObject;
+        if (currentLanguage === 'en' || !contentObject) return contentObject;
 
         const translatedObject = {};
+        const safeEntries = Object.entries(contentObject || {});
         const translations = await Promise.all(
-            Object.entries(contentObject).map(async ([key, value]) => {
+            safeEntries.map(async ([key, value]) => {
                 if (typeof value === 'string') {
                     const translatedValue = await translateText(value, currentLanguage);
                     return [key, translatedValue];

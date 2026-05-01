@@ -22,8 +22,9 @@ const BoothFinder = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (debouncedAddress) {
-        const validation = validateTextInput(debouncedAddress, 100);
+    const safeAddress = debouncedAddress || '';
+    if (safeAddress) {
+        const validation = validateTextInput(safeAddress, 100);
         if (!validation.isValid) {
             setError(validation.message);
         } else {

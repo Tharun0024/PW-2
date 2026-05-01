@@ -22,7 +22,7 @@ const PersonaSelector = ({ personas, selectedPersona, onPersonaChange }) => {
         onChange={(e) => onPersonaChange(e.target.value)}
         className="w-full p-2 border rounded-md"
       >
-        {Object.values(personas).map((persona) => (
+        {Object.values(personas || {}).map((persona) => (
           <option key={persona.id} value={persona.id}>
             {persona.label}
           </option>

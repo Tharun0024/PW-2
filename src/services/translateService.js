@@ -35,7 +35,11 @@ export async function translateText(text, targetLanguage) {
       target: targetLanguage,
       key: API_KEY,
     });
-    return response.data.data.translations[0].translatedText;
+    const translations = response?.data?.data?.translations;
+    if (translations && translations.length > 0) {
+      return translations[0].translatedText;
+    }
+    return text; // Fallback to original text if translation fails
   } catch (error) {
     if (import.meta.env.DEV) {
       console.error('Google Translate API error:', error);

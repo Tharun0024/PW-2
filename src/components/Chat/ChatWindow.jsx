@@ -46,9 +46,10 @@ ChatMessage.propTypes = {
  * @returns {JSX.Element}
  */
 const ChatWindow = ({ currentPersona }) => {
-  const { messages, sendMessage, loading, error } = useGemini();
-  const { translateText, currentLanguage, loading: translationLoading } = useTranslate();
+  const { messages = [], sendMessage, loading, error } = useGemini();
+  const { translateText, currentLanguage, loading: translationLoading } = useTranslate() || {};
   const [userInput, setUserInput] = useState('');
+  const [translatedMessages, setTranslatedMessages] = useState([]);
   const debouncedUserInput = useDebounce(userInput, 300);
   const [validationError, setValidationError] = useState(null);
   const [placeholders, setPlaceholders] = useState({

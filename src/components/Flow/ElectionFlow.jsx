@@ -69,24 +69,26 @@ TimelineStep.propTypes = {
  * @returns {JSX.Element}
  */
 const ElectionFlow = () => {
-  const { translateContent, currentLanguage, loading } = useTranslate();
-  const [steps, setSteps] = useState(electionSteps);
+  const { translateContent, currentLanguage, loading } = useTranslate() || {};
+  const [translatedSteps, setTranslatedSteps] = useState(electionSteps || []);
 
   useEffect(() => {
     if (currentLanguage === 'en') {
-      setTranslatedSteps(ELECTION_STEPS);
+      setTranslatedSteps(electionSteps || []);
       return;
     }
 
     const translateSteps = async () => {
+      if (!translateContent) return;
+      const stepsToTranslate = Array.isArray(electionSteps) ? electionSteps : [];
       const newSteps = await Promise.all(
-        ELECTION_STEPS.map(async (step) => {
+        stepsToTranslate.map(async (step) => {
           const translatedContent = await translateContent({
             title: step.title,
             description: step.description,
             content: step.content,
           });
-          return { ...step, ...translatedContent };
+          return { ...step, ...(translatedContent || {}) };
         })
       );
       setTranslatedSteps(newSteps);
@@ -95,7 +97,9 @@ const ElectionFlow = () => {
     translateSteps();
   }, [currentLanguage, translateContent]);
 
-  if (loading && translatedSteps[0].title === ELECTION_STEPS[0].title) {
+  const safeSteps = Array.isArray(translatedSteps) ? translatedSteps : [];
+
+  if (loading && safeSteps.length > 0 && safeSteps[0].title === (electionSteps[0]?.title || '')) {
     return (
         <div className="flex justify-center items-center p-8">
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
