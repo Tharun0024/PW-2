@@ -16,56 +16,71 @@ export const useGemini = () => {
     try {
       const storedMessages = localStorage.getItem('chatHistory');
       if (storedMessages) {
-        setMessages(JSON.parse(storedMessages));
+        const parsedMessages = JSON.parse(storedMessages);
+        // Failsafe: ensure we always have an array
+        setMessages(Array.isArray(parsedMessages) ? parsedMessages : []);
       }
     } catch (e) {
       console.error("Failed to parse chat history from localStorage", e);
       localStorage.removeItem('chatHistory');
+      setMessages([]); // Reset to empty array on error
     }
   }, []);
 
   useEffect(() => {
     try {
-      localStorage.setItem('chatHistory', JSON.stringify(messages));
+      // Only save if messages is a valid array
+      if (Array.isArray(messages)) {
+        localStorage.setItem('chatHistory', JSON.stringify(messages));
+      }
     } catch(e) {
       console.error("Failed to save chat history to localStorage", e);
     }
   }, [messages]);
 
   const sendMessage = useCallback(async (userInput, persona, originalUserInput = null) => {
-    if (!userInput) return;
+    const safeUserInput = userInput || "";
+    const safePersona = persona || "default";
+    if (!safeUserInput) return;
 
-    const userMessage = { role: 'user', parts: originalUserInput ?? userInput };
-    setMessages(prev => [...prev, userMessage]);
+    const userMessage = { role: 'user', parts: originalUserInput ?? safeUserInput };
+
+    // Ensure messages is always an array before spreading
+    const currentMessages = Array.isArray(messages) ? messages : [];
+    const newMessages = [...currentMessages, userMessage];
+
+    setMessages(newMessages);
     setLoading(true);
     setError(null);
 
-    const cacheKey = `${persona}:${userInput}`;
+    const cacheKey = `${safePersona}:${safeUserInput}`;
     if (chatCache.current.has(cacheKey)) {
       const cachedResponse = chatCache.current.get(cacheKey);
-      setMessages(prev => [...prev, { role: 'model', parts: cachedResponse }]);
+      setMessages(prev => [...(Array.isArray(prev) ? prev : []), { role: 'model', parts: cachedResponse }]);
       setLoading(false);
       return;
     }
 
+    const chatHistory = newMessages.slice(0, -1); // All messages except the latest user input
+
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const response = await runChat(userInput, persona, chatHistory);
+        const response = await runChat(safeUserInput, safePersona, chatHistory);
         chatCache.current.set(cacheKey, response);
-        setMessages(prev => [...prev, { role: 'model', parts: response }]);
+        setMessages(prev => [...(Array.isArray(prev) ? prev : []), { role: 'model', parts: response }]);
         setLoading(false);
         return;
       } catch (err) {
         if (attempt === MAX_RETRIES) {
-          setError(err.message || 'An unknown error occurred.');
+          const errorMessage = err?.message || 'An unknown error occurred.';
+          setError(errorMessage);
           setLoading(false);
         } else {
-          // Optional: add a delay before retrying
           await new Promise(res => setTimeout(res, 1000));
         }
       }
     }
-  }, []);
+  }, [messages]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);

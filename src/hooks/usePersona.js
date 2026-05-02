@@ -21,8 +21,11 @@ export const usePersona = () => {
     const newPersona = allPersonas[personaId];
     if (newPersona) {
       setPersonaState(newPersona);
-    } else if (import.meta.env.DEV) {
-      console.warn(`Persona with id "${personaId}" not found.`);
+    } else {
+      setPersonaState(allPersonas[DEFAULT_PERSONA_ID]);
+      if (import.meta.env.DEV) {
+        console.warn(`Persona with id "${personaId}" not found. Falling back to default.`);
+      }
     }
   }, []);
 

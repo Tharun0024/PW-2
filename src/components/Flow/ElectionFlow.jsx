@@ -1,7 +1,7 @@
 /**
  * @file A component to display the election process flow.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { electionSteps } from '../../data/electionSteps';
 import { useTranslate } from '../../hooks/useTranslate.jsx';
@@ -73,8 +73,17 @@ TimelineStep.propTypes = {
  * @returns {JSX.Element}
  */
 const ElectionFlow = () => {
-  const { translateContent, currentLanguage, loading } = useTranslate() || {};
+  const { t, translateContent, currentLanguage, loading } = useTranslate() || {};
   const [translatedSteps, setTranslatedSteps] = useState(electionSteps || []);
+
+  const uiContent = useMemo(() => ({
+    mainTitle: 'The Journey of a Vote',
+    loadingText: 'Loading content...',
+  }), []);
+
+  useEffect(() => {
+    translateContent(uiContent);
+  }, [currentLanguage, translateContent, uiContent]);
 
   useEffect(() => {
     if (currentLanguage === 'en') {
@@ -87,12 +96,13 @@ const ElectionFlow = () => {
       const stepsToTranslate = Array.isArray(electionSteps) ? electionSteps : [];
       const newSteps = await Promise.all(
         stepsToTranslate.map(async (step) => {
+          const safeStep = step || {};
           const translatedContent = await translateContent({
-            title: step.title,
-            description: step.description,
-            content: step.content,
+            title: safeStep.title,
+            description: safeStep.description,
+            content: safeStep.content,
           });
-          return { ...step, ...(translatedContent || {}) };
+          return { ...safeStep, ...(translatedContent || {}) };
         })
       );
       setTranslatedSteps(newSteps);
@@ -103,24 +113,24 @@ const ElectionFlow = () => {
 
   const safeSteps = Array.isArray(translatedSteps) ? translatedSteps : [];
 
-  if (loading && safeSteps.length > 0 && safeSteps[0].title === (electionSteps[0]?.title || '')) {
+  if (loading && safeSteps.length > 0 && safeSteps[0]?.title === (electionSteps[0]?.title || '')) {
     return (
         <div className="flex justify-center items-center p-8">
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-            <p className="ml-4 text-gray-600">Loading content...</p>
+            <p className="ml-4 text-gray-600">{t('loadingText')}</p>
         </div>
     );
   }
 
   return (
     <div className="p-4 sm:p-6 md:p-8 bg-white rounded-lg shadow-sm">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">The Journey of a Vote</h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('mainTitle')}</h2>
       <ol role="list">
-        {translatedSteps.map((step, index) => (
+        {safeSteps.map((step, index) => (
           <TimelineStep
-            key={step.id}
+            key={step?.id || index}
             step={step}
-            isLast={index === translatedSteps.length - 1}
+            isLast={index === safeSteps.length - 1}
           />
         ))}
       </ol>

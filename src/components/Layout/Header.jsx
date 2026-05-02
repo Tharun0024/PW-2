@@ -23,13 +23,22 @@ const SUPPORTED_LANGUAGES = [
  * @returns {JSX.Element}
  */
 const Header = ({ onChangePersona, personaSelected }) => {
-  const { currentLanguage, setLanguage } = useTranslate();
+  const { t, translateContent, currentLanguage, setLanguage } = useTranslate() || {};
   const [isLangOpen, setIsLangOpen] = useState(false);
   const dropdownRef = useRef(null);
   useFocusTrap(dropdownRef, isLangOpen);
 
+  const uiContent = useMemo(() => ({
+    changePersona: 'Change Persona',
+    electIqTitle: 'Elect',
+  }), []);
+
+  useEffect(() => {
+    translateContent(uiContent);
+  }, [currentLanguage, translateContent, uiContent]);
+
   const handleLangSelect = (langCode) => {
-    setLanguage(langCode);
+    setLanguage(langCode || 'en');
     setIsLangOpen(false);
   };
 
@@ -51,6 +60,8 @@ const Header = ({ onChangePersona, personaSelected }) => {
     }
   }
 
+  const currentLangLabel = SUPPORTED_LANGUAGES.find(l => l.code === currentLanguage)?.label || 'English';
+
   return (
     <header
       className="sticky top-0 z-40 w-full bg-primary text-white shadow-md"
@@ -63,7 +74,7 @@ const Header = ({ onChangePersona, personaSelected }) => {
       >
         <div className="flex items-center">
           <h1 className="text-2xl font-bold tracking-tight">
-            Elect<span className="text-secondary">IQ</span>
+            {t('electIqTitle')}<span className="text-secondary">IQ</span>
           </h1>
         </div>
         <div className="flex items-center space-x-4">
@@ -74,7 +85,7 @@ const Header = ({ onChangePersona, personaSelected }) => {
               aria-expanded={isLangOpen}
               className="flex items-center space-x-1 bg-primary border border-blue-400 rounded-md py-1 pl-3 pr-2 text-sm focus:outline-none focus:ring-2 focus:ring-white"
             >
-              <span>{SUPPORTED_LANGUAGES.find(l => l.code === currentLanguage)?.label}</span>
+              <span>{currentLangLabel}</span>
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
                   <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
               </svg>
@@ -85,14 +96,14 @@ const Header = ({ onChangePersona, personaSelected }) => {
                 aria-orientation="vertical"
                 className="absolute right-0 mt-2 w-36 bg-white text-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
               >
-                {SUPPORTED_LANGUAGES.map(lang => (
+                {(SUPPORTED_LANGUAGES || []).map(lang => (
                   <button
-                    key={lang.code}
+                    key={lang?.code}
                     role="menuitem"
-                    onClick={() => handleLangSelect(lang.code)}
+                    onClick={() => handleLangSelect(lang?.code)}
                     className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
                   >
-                    {lang.label}
+                    {lang?.label}
                   </button>
                 ))}
               </div>
@@ -105,7 +116,7 @@ const Header = ({ onChangePersona, personaSelected }) => {
               aria-label="Change selected persona"
               className="px-3 py-1.5 text-sm font-semibold bg-white text-primary rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary focus:ring-white transition-colors"
             >
-              Change Persona
+              {t('changePersona')}
             </button>
           )}
         </div>

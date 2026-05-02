@@ -17,6 +17,7 @@ const TranslateContext = createContext();
  */
 export const TranslateProvider = ({ children }) => {
     const [currentLanguage, setCurrentLanguage] = useState('en');
+    const [translations, setTranslations] = useState({});
     const [translationCache] = useState(() => new Map());
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -36,9 +37,10 @@ export const TranslateProvider = ({ children }) => {
      * @returns {Promise<string>} The translated text, or original text on error.
      */
     const translateText = useCallback(async (text, targetLang) => {
-        if (!text || targetLang === currentLanguage) return text;
+        const safeText = text || "";
+        if (!safeText || targetLang === currentLanguage) return safeText;
 
-        const cacheKey = `${text}_${targetLang}`;
+        const cacheKey = `${safeText}_${targetLang}`;
         if (translationCache.has(cacheKey)) {
             return translationCache.get(cacheKey);
         }
@@ -46,34 +48,37 @@ export const TranslateProvider = ({ children }) => {
         setLoading(true);
         setError(null);
         try {
-            const translated = await translateService.translateText(text, targetLang);
+            const translated = await translateService.translateText(safeText, targetLang);
             if (translated) {
                 translationCache.set(cacheKey, translated);
                 return translated;
             }
-            return text; // Fallback on empty response
+            return safeText; // Fallback on empty response
         } catch (err) {
             if (import.meta.env.DEV) {
                 console.error('Translation error:', err);
             }
             setError('Translation failed');
-            return text; // Fallback to original text
+            return safeText; // Fallback to original text
         } finally {
             setLoading(false);
         }
     }, [translationCache, currentLanguage]);
 
     /**
-     * Translates all string values within an object.
+     * Translates all string values within an object and updates the state.
      * @param {object} contentObject The object containing strings to translate.
-     * @returns {Promise<object>} A new object with translated string values.
+     * @returns {Promise<void>}
      */
     const translateContent = useCallback(async (contentObject) => {
-        if (currentLanguage === 'en' || !contentObject) return contentObject;
+        if (currentLanguage === 'en' || !contentObject) {
+            setTranslations(contentObject || {});
+            return;
+        }
 
         const translatedObject = {};
         const safeEntries = Object.entries(contentObject || {});
-        const translations = await Promise.all(
+        const translatedPairs = await Promise.all(
             safeEntries.map(async ([key, value]) => {
                 if (typeof value === 'string') {
                     const translatedValue = await translateText(value, currentLanguage);
@@ -83,21 +88,33 @@ export const TranslateProvider = ({ children }) => {
             })
         );
 
-        for (const [key, value] of translations) {
+        for (const [key, value] of translatedPairs) {
             translatedObject[key] = value;
         }
 
-        return translatedObject;
+        setTranslations(translatedObject);
     }, [currentLanguage, translateText]);
+
+    /**
+     * Gets a translated string by key, with a fallback.
+     * @param {string} key The key for the translation.
+     * @returns {string} The translated string or the key itself.
+     */
+    const t = (key) => {
+        const safeKey = key || "";
+        return translations?.[safeKey] || safeKey;
+    };
     
     const value = useMemo(() => ({
+        t,
+        translations,
         currentLanguage,
         setLanguage,
         translateText,
         translateContent,
         loading,
         error,
-    }), [currentLanguage, translateText, translateContent, loading, error]);
+    }), [t, translations, currentLanguage, translateText, translateContent, loading, error]);
 
     return (
         <TranslateContext.Provider value={value}>
@@ -112,7 +129,7 @@ TranslateProvider.propTypes = {
 
 /**
  * Custom hook to access translation context.
- * @returns {{currentLanguage: string, setLanguage: (langCode: string) => void, translateText: (text: string, targetLang: string) => Promise<string>, translateContent: (contentObject: object) => Promise<object>, loading: boolean, error: string|null}}
+ * @returns {{t: (key: string) => string, translations: object, currentLanguage: string, setLanguage: (langCode: string) => void, translateText: (text: string, targetLang: string) => Promise<string>, translateContent: (contentObject: object) => Promise<void>, loading: boolean, error: string|null}}
  */
 export const useTranslate = () => {
     const context = useContext(TranslateContext);

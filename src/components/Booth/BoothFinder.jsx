@@ -5,8 +5,8 @@
  * It allows searching by current location or by a manual address input. It uses the Google Maps API
  * for mapping, geocoding, and displaying markers.
  */
-import { useState, useRef, useEffect } from 'react';
-import { initMap } from '../../services/mapsService';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import * as mapsService from '../../services/mapsService';
 import { validateAddress } from '../../utils/validators';
 import { sanitizeInput, validateTextInput } from '../../utils/security';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -20,6 +20,18 @@ const BoothFinder = () => {
   const debouncedAddress = useDebounce(address, 300);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const uiContent = useMemo(() => ({
+    title: 'Find Your Polling Booth',
+    useLocationButton: 'Use My Location',
+    addressPlaceholder: 'Enter your address',
+    searchButton: 'Search',
+    searchingText: 'Searching for booths...',
+    geolocationUnsupported: 'Geolocation is not supported by your browser.',
+    geolocationPermissionError: 'Unable to retrieve your location. Please grant location permission.',
+    boothSearchError: 'Could not find polling booths. Please try a different location.',
+    geocodeError: 'Could not find a location for the address provided.',
+  }), []);
 
   useEffect(() => {
     const safeAddress = debouncedAddress || '';
@@ -35,19 +47,13 @@ const BoothFinder = () => {
     }
   }, [debouncedAddress]);
 
-  /**
-   * Clears existing markers from the map.
-   */
-  const clearMarkers = () => {
-    markers.forEach(marker => marker.setMap(null));
+  const clearMarkers = useCallback(() => {
+    const safeMarkers = Array.isArray(markers) ? markers : [];
+    safeMarkers.forEach(marker => marker?.setMap(null));
     setMarkers([]);
-  };
+  }, [markers]);
 
-  /**
-   * Initializes the map and finds nearby booths.
-   * @param {google.maps.LatLngLiteral} location The latitude and longitude to center the map on.
-   */
-  const initAndFind = async (location) => {
+  const initAndFind = useCallback(async (location) => {
     setLoading(true);
     setError(null);
     setBooths([]);
@@ -67,56 +73,58 @@ const BoothFinder = () => {
 
       if (currentMap) {
         const nearbyBooths = await mapsService.findNearbyBooths(currentMap, location);
-        setBooths(nearbyBooths);
+        const safeBooths = Array.isArray(nearbyBooths) ? nearbyBooths : [];
+        setBooths(safeBooths);
 
-        const newMarkers = nearbyBooths.map(booth => {
-          const marker = new google.maps.Marker({
-            position: booth.geometry.location,
-            map: currentMap,
-            title: booth.name,
-          });
-          return marker;
-        });
+        const newMarkers = safeBooths.map(booth => {
+          if (booth?.geometry?.location) {
+            const marker = new google.maps.Marker({
+              position: booth.geometry.location,
+              map: currentMap,
+              title: booth.name,
+            });
+            return marker;
+          }
+          return null;
+        }).filter(Boolean);
         setMarkers(newMarkers);
       }
     } catch (err) {
       if (import.meta.env.DEV) console.error('Map initialization/search error:', err);
-      setError('Could not find polling booths. Please try a different location.');
+      setError(uiContent.boothSearchError);
     } finally {
       setLoading(false);
     }
-  };
+  }, [map, clearMarkers, uiContent.boothSearchError]);
 
-  /**
-   * Handles the "Use My Location" button click.
-   */
-  const handleUseLocation = () => {
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser.');
+  const handleUseLocation = useCallback(() => {
+    if (!navigator?.geolocation) {
+      setError(uiContent.geolocationUnsupported);
       return;
     }
     setLoading(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const { latitude, longitude } = position.coords;
-        initAndFind({ lat: latitude, lng: longitude });
+        const { latitude, longitude } = position?.coords || {};
+        if (latitude && longitude) {
+          initAndFind({ lat: latitude, lng: longitude });
+        } else {
+          setError(uiContent.geolocationPermissionError);
+          setLoading(false);
+        }
       },
       () => {
-        setError('Unable to retrieve your location. Please grant location permission.');
+        setError(uiContent.geolocationPermissionError);
         setLoading(false);
       }
     );
-  };
+  }, [initAndFind, uiContent.geolocationUnsupported, uiContent.geolocationPermissionError]);
 
-  /**
-   * Handles the address search form submission.
-   * @param {React.FormEvent<HTMLFormElement>} e The form event.
-   */
-  const handleAddressSearch = async (e) => {
+  const handleAddressSearch = useCallback(async (e) => {
     e.preventDefault();
 
     const sanitizedAddress = sanitizeInput(address);
-    const validation = validateTextInput(sanitizedAddress, 100); // Shorter length for address
+    const validation = validateTextInput(sanitizedAddress, 100);
     if (!validation.isValid) {
       setError(validation.message);
       return;
@@ -124,7 +132,7 @@ const BoothFinder = () => {
 
     const addressValidation = validateAddress(sanitizedAddress);
     if (!addressValidation.success) {
-      setError(addressValidation.error.issues[0].message);
+      setError(addressValidation.error?.issues?.[0]?.message || uiContent.geocodeError);
       return;
     }
     setLoading(true);
@@ -133,40 +141,40 @@ const BoothFinder = () => {
       if (location) {
         initAndFind(location);
       } else {
-        setError('Could not find a location for the address provided.');
+        setError(uiContent.geocodeError);
       }
     } catch (err) {
       if (import.meta.env.DEV) console.error('Geocoding error:', err);
-      setError('Could not find a location for the address provided.');
+      setError(uiContent.geocodeError);
     } finally {
       setLoading(false);
     }
-  };
+  }, [address, initAndFind, uiContent.geocodeError]);
 
   useEffect(() => {
-    // Cleanup markers on unmount
     return () => {
-      markers.forEach(marker => marker.setMap(null));
+      const safeMarkers = Array.isArray(markers) ? markers : [];
+      safeMarkers.forEach(marker => marker?.setMap(null));
     };
   }, [markers]);
 
   return (
     <div className="p-4 sm:p-6 bg-white rounded-lg shadow-sm">
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">Find Your Polling Booth</h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">{uiContent.title}</h2>
       <div className="flex flex-col sm:flex-row gap-4 mb-4">
         <button
           onClick={handleUseLocation}
           disabled={loading}
           className="w-full sm:w-auto px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
         >
-          Use My Location
+          {uiContent.useLocationButton}
         </button>
         <form onSubmit={handleAddressSearch} className="flex-grow flex gap-2">
           <input
             type="text"
             value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="Enter your address"
+            onChange={(e) => setAddress(e.target.value || '')}
+            placeholder={uiContent.addressPlaceholder}
             aria-label="Address for polling booth search"
             aria-invalid={!!error}
             aria-describedby="booth-error"
@@ -179,7 +187,7 @@ const BoothFinder = () => {
             disabled={loading || !!error}
             className="px-4 py-2 bg-secondary text-white font-semibold rounded-lg hover:bg-orange-600 disabled:bg-gray-400"
           >
-            Search
+            {uiContent.searchButton}
           </button>
         </form>
       </div>
@@ -187,7 +195,7 @@ const BoothFinder = () => {
       {loading && (
         <div className="flex justify-center items-center my-8" role="status">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="ml-4 text-gray-600">Searching for booths...</p>
+          <p className="ml-4 text-gray-600">{uiContent.searchingText}</p>
         </div>
       )}
 
@@ -198,21 +206,15 @@ const BoothFinder = () => {
         ref={mapRef}
         className="w-full h-[400px] bg-gray-200 rounded-lg my-4"
         aria-label="Map showing polling booth locations"
-      ></div>
-
-      {booths.length > 0 && (
-        <div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Nearby Booths:</h3>
-          <ul className="space-y-2">
-            {booths.map((booth, index) => (
-              <li key={index} className="p-3 bg-gray-50 rounded-md border">
-                <p className="font-bold">{booth.name}</p>
-                <p className="text-sm text-gray-600">{booth.vicinity}</p>
-              </li>
+      >
+        {booths.length > 0 && (
+          <ul className="sr-only">
+            {(Array.isArray(booths) ? booths : []).map((booth, index) => (
+              <li key={index}>{booth?.name || 'Unnamed booth'} at {booth?.vicinity || 'Unknown address'}</li>
             ))}
           </ul>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

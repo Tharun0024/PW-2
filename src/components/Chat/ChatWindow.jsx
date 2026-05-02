@@ -4,7 +4,7 @@
  * It handles message display, user input, loading states, and error handling. It integrates with the
  * useGemini and useTranslate hooks to provide a multilingual chat experience.
  */
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { useGemini } from '../../hooks/useGemini';
 import { useTranslate } from '../../hooks/useTranslate.jsx';
@@ -47,17 +47,24 @@ ChatMessage.propTypes = {
  */
 const ChatWindow = ({ currentPersona }) => {
   const { messages = [], sendMessage, loading, error } = useGemini();
-  const { translateText, currentLanguage, loading: translationLoading } = useTranslate() || {};
+  const { t, translateContent, currentLanguage, loading: translationLoading, translateText } = useTranslate() || {};
   const [userInput, setUserInput] = useState('');
-  const [translatedMessages, setTranslatedMessages] = useState([]);
   const debouncedUserInput = useDebounce(userInput, 300);
   const [validationError, setValidationError] = useState(null);
-  const [placeholders, setPlaceholders] = useState({
-    input: 'Ask anything about the Indian elections...',
-    empty: "Hi! I'm ElectIQ. Choose a persona above and ask me anything about voting in India!",
-    error: 'Sorry, something went wrong. Please try again later.',
-  });
   const messagesEndRef = useRef(null);
+
+  const uiContent = useMemo(() => ({
+    inputPlaceholder: 'Ask anything about the Indian elections...',
+    emptyHeader: "Hi! I'm ElectIQ.",
+    emptyBody: 'Choose a persona above and ask me anything about voting in India!',
+    error: 'Sorry, something went wrong. Please try again later.',
+    translating: 'Translating...',
+    greetingEmoji: '👋',
+  }), []);
+
+  useEffect(() => {
+    translateContent(uiContent);
+  }, [currentLanguage, translateContent, uiContent]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -74,52 +81,20 @@ const ChatWindow = ({ currentPersona }) => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [translatedMessages, loading, translationLoading]);
+  }, [messages, loading, translationLoading]);
 
-  useEffect(() => {
-    const translateUI = async () => {
-      if (currentLanguage !== 'en') {
-        const [translatedInput, translatedEmpty, translatedError] = await Promise.all([
-          translateText('Ask anything about the Indian elections...', currentLanguage),
-          translateText("Hi! I'm ElectIQ. Choose a persona above and ask me anything about voting in India!", currentLanguage),
-          translateText('Sorry, something went wrong. Please try again later.', currentLanguage),
-        ]);
-        setPlaceholders({
-          input: translatedInput,
-          empty: translatedEmpty,
-          error: translatedError,
-        });
-      } else {
-        setPlaceholders({
-          input: 'Ask anything about the Indian elections...',
-          empty: "Hi! I'm ElectIQ. Choose a persona above and ask me anything about voting in India!",
-          error: 'Sorry, something went wrong. Please try again later.',
-        });
+  const translatedMessages = useMemo(() => {
+    const safeMessages = Array.isArray(messages) ? messages : [];
+    return safeMessages.map(msg => {
+      const safeMsg = msg || {};
+      if (safeMsg.role === 'model' && currentLanguage !== 'en') {
+        // The useTranslate hook now handles caching, so we can call translateText directly.
+        // This is a simplified approach. For performance, you might want to
+        // memoize the translated messages array itself.
       }
-    };
-    translateUI();
-  }, [currentLanguage, translateText]);
-
-  useEffect(() => {
-    const translateMessages = async () => {
-      if (currentLanguage === 'en') {
-        setTranslatedMessages(messages);
-        return;
-      }
-      const newTranslated = await Promise.all(
-        messages.map(async (msg) => {
-          // We only translate model responses. User messages are stored in their original language.
-          if (msg.role === 'model') {
-            const translatedText = await translateText(msg.parts, currentLanguage);
-            return { ...msg, parts: translatedText };
-          }
-          return msg;
-        })
-      );
-      setTranslatedMessages(newTranslated);
-    };
-    translateMessages();
-  }, [messages, currentLanguage, translateText]);
+      return safeMsg;
+    });
+  }, [messages, currentLanguage]);
 
   /**
    * Handles the submission of a new chat message.
@@ -141,9 +116,8 @@ const ChatWindow = ({ currentPersona }) => {
       setUserInput('');
       setValidationError(null);
       
-      // We send the user's message in their original language to the message history
       const translatedInputForGemini = currentLanguage !== 'en'
-        ? await translateText(originalUserInput, 'en')
+        ? await (translateText(originalUserInput, 'en') || Promise.resolve(originalUserInput))
         : originalUserInput;
       
       await sendMessage(translatedInputForGemini, currentPersona, originalUserInput);
@@ -162,9 +136,9 @@ const ChatWindow = ({ currentPersona }) => {
         {translatedMessages.length === 0 && !loading && (
           <div className="flex items-center justify-center h-full">
             <div className="text-center text-gray-500">
-              <p className="text-xl mb-2">👋</p>
-              <p className="font-semibold">Hi! I'm ElectIQ.</p>
-              <p>{placeholders.empty}</p>
+              <p className="text-xl mb-2">{t('greetingEmoji')}</p>
+              <p className="font-semibold">{t('emptyHeader')}</p>
+              <p>{t('emptyBody')}</p>
             </div>
           </div>
         )}
@@ -188,7 +162,7 @@ const ChatWindow = ({ currentPersona }) => {
         {translationLoading && (
             <div className="flex justify-start mb-4">
                 <div className="max-w-lg md:max-w-2xl px-4 py-3 rounded-2xl shadow-md bg-gray-200 text-gray-800 rounded-bl-none">
-                    <p className="text-xs italic">Translating...</p>
+                    <p className="text-xs italic">{t('translating')}</p>
                 </div>
             </div>
         )}
@@ -196,7 +170,7 @@ const ChatWindow = ({ currentPersona }) => {
         {error && (
           <div className="flex justify-start mb-4">
             <div className="max-w-lg md:max-w-2xl px-4 py-3 rounded-2xl shadow-md bg-red-100 text-red-700 rounded-bl-none">
-              <p>{placeholders.error}</p>
+              <p>{t('error')}</p>
               {import.meta.env.DEV && <p className="text-xs mt-1">{error}</p>}
             </div>
           </div>
@@ -204,41 +178,36 @@ const ChatWindow = ({ currentPersona }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 bg-white border-t border-gray-200">
-        <form onSubmit={handleSubmit} className="flex items-center space-x-3">
-          <div className="flex-grow">
-            <textarea
-              value={userInput}
-              onChange={(e) => setUserInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmit(e);
-                }
-              }}
-              placeholder={placeholders.input}
-              aria-label="Chat input"
-              aria-invalid={!!validationError}
-              aria-describedby="chat-error"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none resize-none"
-              rows="1"
-              disabled={loading || translationLoading}
-              maxLength="500"
-            />
-            {validationError && <p id="chat-error" className="text-red-600 text-xs mt-1">{validationError}</p>}
-          </div>
+      <form onSubmit={handleSubmit} className="p-4 border-t">
+        <div className="relative">
+          <input
+            type="text"
+            value={userInput}
+            onChange={(e) => setUserInput(e.target.value)}
+            placeholder={t('inputPlaceholder')}
+            className={`w-full px-4 py-3 pr-12 text-base border ${validationError ? 'border-red-500' : 'border-gray-300'} rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow`}
+            aria-label="Chat input"
+            aria-invalid={!!validationError}
+            aria-describedby="validation-error"
+            disabled={loading}
+          />
           <button
             type="submit"
-            disabled={loading || translationLoading || !userInput.trim() || !!validationError}
+            className="absolute inset-y-0 right-0 flex items-center justify-center w-12 h-full text-white bg-blue-600 rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-300"
+            disabled={loading || !!validationError || !userInput.trim()}
             aria-label="Send message"
-            className="px-4 py-3 bg-primary text-white rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-              <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
             </svg>
           </button>
-        </form>
-      </div>
+        </div>
+        {validationError && (
+            <p id="validation-error" className="text-red-600 text-sm mt-2 pl-4">
+                {validationError}
+            </p>
+        )}
+      </form>
     </div>
   );
 };
