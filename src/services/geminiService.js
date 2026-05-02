@@ -69,7 +69,18 @@ export const runChat = async (userInput, persona, history) => {
     },
   });
 
-  const result = await chat.sendMessage(sanitizedInput);
-  const response = await result.response;
-  return response.text();
+  try {
+    const result = await chat.sendMessage(sanitizedInput);
+    const response = await result.response;
+
+    // Safely access the text from the response
+    const text = response?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    return text || "Sorry, I couldn't generate a response right now.";
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error('Gemini API error:', error);
+    }
+    return "Sorry, something went wrong. Please try again later.";
+  }
 };

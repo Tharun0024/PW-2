@@ -4,6 +4,7 @@
 import { useMemo, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslate } from '../../hooks/useTranslate';
+import { usePersona } from '../../hooks/usePersona';
 
 /**
  * PersonaSelector component allows the user to choose a persona.

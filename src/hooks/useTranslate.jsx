@@ -71,28 +71,40 @@ export const TranslateProvider = ({ children }) => {
      * @returns {Promise<void>}
      */
     const translateContent = useCallback(async (contentObject) => {
-        if (currentLanguage === 'en' || !contentObject) {
-            setTranslations(contentObject || {});
+        const safeContent = contentObject || {};
+        if (currentLanguage === 'en' || !safeContent) {
+            setTranslations(safeContent);
             return;
         }
 
-        const translatedObject = {};
-        const safeEntries = Object.entries(contentObject || {});
-        const translatedPairs = await Promise.all(
-            safeEntries.map(async ([key, value]) => {
-                if (typeof value === 'string') {
-                    const translatedValue = await translateText(value, currentLanguage);
-                    return [key, translatedValue];
-                }
-                return [key, value];
-            })
-        );
+        setLoading(true);
+        setError(null);
+        try {
+            const translatedObject = {};
+            const safeEntries = Object.entries(safeContent);
+            const translatedPairs = await Promise.all(
+                safeEntries.map(async ([key, value]) => {
+                    if (typeof value === 'string') {
+                        const translatedValue = await translateText(value, currentLanguage);
+                        return [key, translatedValue];
+                    }
+                    return [key, value];
+                })
+            );
 
-        for (const [key, value] of translatedPairs) {
-            translatedObject[key] = value;
+            for (const [key, value] of translatedPairs) {
+                translatedObject[key] = value;
+            }
+            setTranslations(translatedObject);
+        } catch (err) {
+            if (import.meta.env.DEV) {
+                console.error('Content translation error:', err);
+            }
+            setError('Content translation failed');
+            setTranslations(safeContent); // Fallback to original content
+        } finally {
+            setLoading(false);
         }
-
-        setTranslations(translatedObject);
     }, [currentLanguage, translateText]);
 
     /**

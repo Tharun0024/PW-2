@@ -57,7 +57,7 @@ const ChatWindow = ({ currentPersona }) => {
     inputPlaceholder: 'Ask anything about the Indian elections...',
     emptyHeader: "Hi! I'm ElectIQ.",
     emptyBody: 'Choose a persona above and ask me anything about voting in India!',
-    error: 'Sorry, something went wrong. Please try again later.',
+    error: '⚠️ Unable to connect to AI right now. Please try again.',
     translating: 'Translating...',
     greetingEmoji: '👋',
   }), []);

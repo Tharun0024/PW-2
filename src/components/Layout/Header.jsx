@@ -4,7 +4,7 @@
  * a button to change the persona, and a functional language switcher. The header is
  * sticky to remain visible on scroll.
  */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { useTranslate } from '../../hooks/useTranslate.jsx';
 import { useFocusTrap } from '../../hooks/useAccessibility';
