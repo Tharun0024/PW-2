@@ -5,10 +5,16 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { memoryCache } from '../utils/cache';
 import { sanitizeInput } from '../utils/sanitizer';
+import { logger } from '../utils/logger';
+import { trackAIQuery } from '../utils/analytics';
+import { quickResponses } from '../constants/quickResponses';
+import { getCachedResponse, saveResponse } from '../utils/responseCache';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const MAX_RETRIES = 2;
+const GEMINI_PRIMARY_MODEL = 'gemini-pro'; // Using a standard reliable model
+const GEMINI_FALLBACK_MODEL = 'gemini-1.5-flash'; // Faster, potentially less capable model
 
 /**
  * Generates a response from the Gemini model based on user message and persona.
@@ -26,7 +32,7 @@ export async function generateElectionResponse(userMessage, persona, conversatio
     return cachedResponse;
   }
 
-  const maxRetries = 2;
+  const maxRetries = MAX_RETRIES;
   let attempt = 0;
 
   while (attempt <= maxRetries) {
@@ -54,6 +60,45 @@ export async function generateElectionResponse(userMessage, persona, conversatio
         throw new Error('Failed to get a response from the AI after multiple retries.');
       }
     }
+  }
+}
+
+/**
+ * Gets a streaming response from the Gemini API.
+ * @param {string} userInput - The user's input.
+ * @param {Array<object>} history - The conversation history.
+ * @param {string} persona - The persona system prompt.
+ * @param {AbortSignal} signal - Abort signal for the request.
+ * @param {boolean} useFallback - Whether to use the fallback model.
+ * @returns {AsyncGenerator<string, void, unknown>} An async generator that yields response chunks.
+ */
+export async function* getGeminiResponseStream(userInput, history, persona, signal, useFallback = false) {
+  const modelName = useFallback ? GEMINI_FALLBACK_MODEL : GEMINI_PRIMARY_MODEL;
+  logger.info('Initiating Gemini Stream', { modelName });
+  
+  const model = genAI.getGenerativeModel({ model: modelName });
+
+  const chat = model.startChat({
+    history: history,
+    generationConfig: {
+      maxOutputTokens: 1000,
+    },
+    systemInstruction: persona,
+  });
+
+  try {
+    const result = await chat.sendMessageStream(userInput, { signal });
+    for await (const chunk of result.stream) {
+      const chunkText = chunk.text();
+      yield chunkText;
+    }
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      logger.warn('Gemini stream request was aborted.');
+      return; // Stop generation if aborted
+    }
+    logger.error('Gemini stream error', { error: error.message });
+    throw error; // Re-throw to be caught by the caller
   }
 }
 

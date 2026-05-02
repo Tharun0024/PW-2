@@ -11,10 +11,12 @@
  */
 import { useState, useRef, lazy, Suspense } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { usePersona } from './hooks/usePersona';
 import { TranslateProvider } from './hooks/useTranslate.jsx';
 import { useFocusTrap } from './hooks/useAccessibility';
 import ErrorBoundary from './components/ErrorBoundary';
+import OfflineBanner from './components/OfflineBanner';
 
 // Import Components
 import Header from './components/Layout/Header';
@@ -26,6 +28,7 @@ const ChatWindow = lazy(() => import('./components/Chat/ChatWindow'));
 const ElectionFlow = lazy(() => import('./components/Flow/ElectionFlow'));
 const BoothFinder = lazy(() => import('./components/Booth/BoothFinder'));
 const EligibilityChecker = lazy(() => import('./components/Eligibility/EligibilityChecker'));
+const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard'));
 const DemoMode = lazy(() => import('./components/Demo/DemoMode'));
 
 const TABS_CONFIG = [
@@ -34,6 +37,10 @@ const TABS_CONFIG = [
   { value: 'booth', label: '📍 Find Booth', Component: BoothFinder },
   { value: 'eligibility', label: '✅ Eligibility', Component: EligibilityChecker },
   { value: 'demo', label: '🎬 Demo', Component: DemoMode },
+];
+
+const ROUTES_CONFIG = [
+    { path: '/analytics', Component: AnalyticsDashboard },
 ];
 
 const LoadingSpinner = () => (
@@ -124,7 +131,19 @@ function App() {
   return (
     <ErrorBoundary>
       <TranslateProvider>
-        <AppContent />
+        <Router>
+            <Routes>
+                <Route path="/" element={<AppContent />} />
+                {ROUTES_CONFIG.map(({ path, Component }) => (
+                    <Route key={path} path={path} element={
+                        <Suspense fallback={<LoadingSpinner />}>
+                            <Component />
+                        </Suspense>
+                    } />
+                ))}
+            </Routes>
+            <OfflineBanner />
+        </Router>
       </TranslateProvider>
     </ErrorBoundary>
   );
