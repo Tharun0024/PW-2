@@ -27,7 +27,7 @@ const PersonaSelector = ({ onSelect, selectedPersona }) => {
     translateContent(uiContent);
   }, [currentLanguage, translateContent, uiContent]);
 
-  const safePersonas = useMemo(() => Object.values(personaConfig || {}), [personaConfig]);
+  const safePersonas = useMemo(() => Object.values(personaConfig ?? {}), [personaConfig]);
   const currentDescription = personaConfig?.[selectedPersona]?.description || '';
 
   return (

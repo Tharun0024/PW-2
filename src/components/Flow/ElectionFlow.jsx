@@ -73,8 +73,8 @@ TimelineStep.propTypes = {
  * @returns {JSX.Element}
  */
 const ElectionFlow = () => {
-  const { t, translateContent, currentLanguage, loading } = useTranslate() || {};
-  const [translatedSteps, setTranslatedSteps] = useState(electionSteps || []);
+  const { t, translateContent, currentLanguage, loading } = useTranslate() ?? {};
+  const [translatedSteps, setTranslatedSteps] = useState(electionSteps ?? []);
 
   const uiContent = useMemo(() => ({
     mainTitle: 'The Journey of a Vote',
@@ -96,11 +96,11 @@ const ElectionFlow = () => {
       const stepsToTranslate = Array.isArray(electionSteps) ? electionSteps : [];
       const newSteps = await Promise.all(
         stepsToTranslate.map(async (step) => {
-          const safeStep = step || {};
+          const safeStep = step ?? {};
           const translatedContent = await translateContent({
-            title: safeStep.title,
-            description: safeStep.description,
-            content: safeStep.content,
+            title: safeStep?.title,
+            description: safeStep?.description,
+            content: safeStep?.content,
           });
           return { ...safeStep, ...(translatedContent || {}) };
         })

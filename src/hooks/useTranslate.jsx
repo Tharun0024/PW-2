@@ -6,7 +6,7 @@
  */
 import { useState, useCallback, createContext, useContext, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import * as translateService from '../services/translateService';
+import { translateText as translateTextService } from '../services/translateService';
 
 const TranslateContext = createContext();
 
@@ -48,7 +48,7 @@ export const TranslateProvider = ({ children }) => {
         setLoading(true);
         setError(null);
         try {
-            const translated = await translateService.translateText(safeText, targetLang);
+            const translated = await translateTextService(safeText, targetLang);
             if (translated) {
                 translationCache.set(cacheKey, translated);
                 return translated;

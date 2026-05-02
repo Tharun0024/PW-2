@@ -51,18 +51,18 @@ const EligibilityChecker = ({ persona }) => {
     event.preventDefault();
     setResult(null);
     const newErrors = {};
-    const safeFormData = formData || {};
+    const safeFormData = formData ?? {};
 
-    if (!validateName(safeFormData.name)) {
+    if (!validateName(safeFormData?.name)) {
       newErrors.name = t('nameError');
     }
-    if (!validateAge(parseInt(safeFormData.age, 10))) {
+    if (!validateAge(parseInt(safeFormData?.age, 10))) {
       newErrors.age = t('ageError');
     }
-    if (!validateAadhaar(safeFormData.aadhaar)) {
+    if (!validateAadhaar(safeFormData?.aadhaar)) {
       newErrors.aadhaar = t('aadhaarError');
     }
-    if (!validatePincode(safeFormData.pincode)) {
+    if (!validatePincode(safeFormData?.pincode)) {
       newErrors.pincode = t('pincodeError');
     }
 
@@ -82,23 +82,23 @@ const EligibilityChecker = ({ persona }) => {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="name" className="block font-medium">{t('nameLabel')}</label>
-          <input type="text" id="name" name="name" value={formData.name} onChange={handleChange} aria-label="Your full name" className="w-full p-2 border rounded-md" />
-          {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+          <input type="text" id="name" name="name" value={formData?.name || ''} onChange={handleChange} aria-label="Your full name" className="w-full p-2 border rounded-md" />
+          {errors?.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
         </div>
         <div>
           <label htmlFor="age" className="block font-medium">{t('ageLabel')}</label>
-          <input type="number" id="age" name="age" value={formData.age} onChange={handleChange} aria-label="Your age" className="w-full p-2 border rounded-md" />
-          {errors.age && <p className="text-red-500 text-sm mt-1">{errors.age}</p>}
+          <input type="number" id="age" name="age" value={formData?.age || ''} onChange={handleChange} aria-label="Your age" className="w-full p-2 border rounded-md" />
+          {errors?.age && <p className="text-red-500 text-sm mt-1">{errors.age}</p>}
         </div>
         <div>
           <label htmlFor="aadhaar" className="block font-medium">{t('aadhaarLabel')}</label>
-          <input type="text" id="aadhaar" name="aadhaar" value={formData.aadhaar} onChange={handleChange} aria-label="Your 12-digit Aadhaar number" className="w-full p-2 border rounded-md" />
-          {errors.aadhaar && <p className="text-red-500 text-sm mt-1">{errors.aadhaar}</p>}
+          <input type="text" id="aadhaar" name="aadhaar" value={formData?.aadhaar || ''} onChange={handleChange} aria-label="Your 12-digit Aadhaar number" className="w-full p-2 border rounded-md" />
+          {errors?.aadhaar && <p className="text-red-500 text-sm mt-1">{errors.aadhaar}</p>}
         </div>
         <div>
           <label htmlFor="pincode" className="block font-medium">{t('pincodeLabel')}</label>
-          <input type="text" id="pincode" name="pincode" value={formData.pincode} onChange={handleChange} aria-label="Your 6-digit pincode" className="w-full p-2 border rounded-md" />
-          {errors.pincode && <p className="text-red-500 text-sm mt-1">{errors.pincode}</p>}
+          <input type="text" id="pincode" name="pincode" value={formData?.pincode || ''} onChange={handleChange} aria-label="Your 6-digit pincode" className="w-full p-2 border rounded-md" />
+          {errors?.pincode && <p className="text-red-500 text-sm mt-1">{errors.pincode}</p>}
         </div>
         <button type="submit" className="bg-primary text-white p-2 rounded-md">{t('checkButton')}</button>
       </form>

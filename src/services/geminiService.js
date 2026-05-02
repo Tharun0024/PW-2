@@ -57,7 +57,7 @@ export async function generateElectionResponse(userMessage, persona, conversatio
   }
 }
 
-export const runChat = async (userInput, persona, history) => {
+export const getGeminiResponse = async (userInput, persona, history) => {
   const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
   const sanitizedInput = sanitizeInput(userInput);

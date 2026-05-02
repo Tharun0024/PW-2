@@ -2,7 +2,7 @@
  * @file Custom React hook for interacting with the Gemini service.
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { runChat } from '../services/geminiService.js';
+import { getGeminiResponse } from '../services/geminiService.js';
 
 const MAX_RETRIES = 2;
 
@@ -65,7 +65,7 @@ export const useGemini = () => {
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const response = await runChat(safeUserInput, safePersona, chatHistory);
+        const response = await getGeminiResponse(safeUserInput, safePersona, chatHistory);
         chatCache.current.set(cacheKey, response);
         setMessages(prev => [...(Array.isArray(prev) ? prev : []), { role: 'model', parts: response }]);
         setLoading(false);
