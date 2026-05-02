@@ -2,19 +2,19 @@
  * @file Service for interacting with the Google Gemini API.
  */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { memoryCache } from '../utils/cache';
-import { sanitizeInput } from '../utils/sanitizer';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { logger } from '../utils/logger';
-import { trackAIQuery } from '../utils/analytics';
-import { quickResponses } from '../constants/quickResponses';
-import { getCachedResponse, saveResponse } from '../utils/responseCache';
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI(API_KEY);
-const MAX_RETRIES = 2;
-const GEMINI_PRIMARY_MODEL = 'gemini-pro'; // Using a standard reliable model
-const GEMINI_FALLBACK_MODEL = 'gemini-1.5-flash'; // Faster, potentially less capable model
+const GOOGLE_GEMINI_API_KEY = import.meta.env.VITE_GOOGLE_GEMINI_API_KEY;
+
+if (!GOOGLE_GEMINI_API_KEY) {
+  logger.error("VITE_GOOGLE_GEMINI_API_KEY is not set. AI service will not be available.");
+}
+
+const genAI = GOOGLE_GEMINI_API_KEY ? new GoogleGenerativeAI(GOOGLE_GEMINI_API_KEY) : null;
+
+const GEMINI_PRIMARY_MODEL = 'gemini-pro';
+const GEMINI_FALLBACK_MODEL = 'gemini-1.5-flash';
 
 /**
  * Generates a response from the Gemini model based on user message and persona.
@@ -73,9 +73,14 @@ export async function generateElectionResponse(userMessage, persona, conversatio
  * @returns {AsyncGenerator<string, void, unknown>} An async generator that yields response chunks.
  */
 export async function* getGeminiResponseStream(userInput, history, persona, signal, useFallback = false) {
+  if (!genAI) {
+    logger.error("Gemini AI Service not initialized due to missing API key.");
+    throw new Error("AI service is not configured.");
+  }
+
   const modelName = useFallback ? GEMINI_FALLBACK_MODEL : GEMINI_PRIMARY_MODEL;
   logger.info('Initiating Gemini Stream', { modelName });
-  
+
   const model = genAI.getGenerativeModel({ model: modelName });
 
   const chat = model.startChat({
@@ -103,29 +108,28 @@ export async function* getGeminiResponseStream(userInput, history, persona, sign
 }
 
 export const getGeminiResponse = async (userInput, persona, history) => {
-  const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+  if (!genAI) {
+    logger.error("Gemini AI Service not initialized due to missing API key.");
+    throw new Error("AI service is not configured.");
+  }
 
-  const sanitizedInput = sanitizeInput(userInput);
+  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
   const chat = model.startChat({
     history: history,
     generationConfig: {
-      maxOutputTokens: 1000,
+      maxOutputTokens: 100,
     },
+    systemInstruction: persona,
   });
 
   try {
-    const result = await chat.sendMessage(sanitizedInput);
+    const result = await chat.sendMessage(userInput);
     const response = await result.response;
-
-    // Safely access the text from the response
-    const text = response?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    return text || "Sorry, I couldn't generate a response right now.";
+    const text = response.text();
+    return text;
   } catch (error) {
-    if (import.meta.env.DEV) {
-      console.error('Gemini API error:', error);
-    }
-    return "Sorry, something went wrong. Please try again later.";
+    logger.error('Gemini non-stream error', { error: error.message });
+    throw error;
   }
 };
